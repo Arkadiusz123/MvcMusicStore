@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using System.Web.Mvc;
-using System.Web.Routing;
 using System.Web.Security;
 using MvcMusicStore.Models;
 
@@ -30,6 +26,8 @@ namespace MvcMusicStore.Controllers
             {
                 if (Membership.ValidateUser(model.UserName, model.Password))
                 {
+                    MigrateShoppingCart(model.UserName);
+
                     FormsAuthentication.SetAuthCookie(model.UserName, model.RememberMe);
                     if (Url.IsLocalUrl(returnUrl) && returnUrl.Length > 1 && returnUrl.StartsWith("/")
                         && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\"))
@@ -83,6 +81,8 @@ namespace MvcMusicStore.Controllers
 
                 if (createStatus == MembershipCreateStatus.Success)
                 {
+                    MigrateShoppingCart(model.UserName);
+
                     FormsAuthentication.SetAuthCookie(model.UserName, false /* createPersistentCookie */);
                     return RedirectToAction("Index", "Home");
                 }
@@ -148,6 +148,15 @@ namespace MvcMusicStore.Controllers
         public ActionResult ChangePasswordSuccess()
         {
             return View();
+        }
+
+        private void MigrateShoppingCart(string UserName)
+        {
+            // Associate shopping cart items with logged-in user
+            var cart = ShoppingCart.GetCart(this.HttpContext);
+
+            cart.MigrateCart(UserName);
+            Session[ShoppingCart.CartSessionKey] = UserName;
         }
 
         #region Status Codes
